@@ -3,6 +3,7 @@ Gemfile.lock
 
 # build artifacts
 *.gem
+*.swp
 
 # docs
 /.yardoc
