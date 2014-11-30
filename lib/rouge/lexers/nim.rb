@@ -3,6 +3,7 @@
 module Rouge
   module Lexers
     class Nim < RegexLexer
+      # This is pretty much a 1-1 port of the pygments NimrodLexer class
       desc "The Nim programming language (http://nim-lang.org/)"
 
       tag 'nim'
@@ -30,9 +31,47 @@ module Rouge
        seq set string
       ) 
 
+      state :strings do
+        rule(/(?<!\$)\$(\d+|#|\w+)+/, Str::Interpol)
+        rule(/[^\\\'"\$\n]+/,         Str)
+        rule(/[\'"\\]/,               Str)
+        rule(/\$/,                    Str)
+      end
+
+      state :dqs do
+        rule(/\\([\\abcefnrtvl"\']|\n|x[a-fA-F0-9]{2}|[0-9]{1,3})/,
+             Str::Escape)
+        rule(/""/, Str, :pop)
+        mixin :strings
+      end
+
+      state :rdqs do
+        rule(/"(?!")/, Str, :pop)
+        rule(/"/,      Str::Escape, :pop)
+        mixin :strings
+      end
+
+      state :tdqs do
+        rule(/"""(?!")/, Str, :pop)
+        mixin :strings
+        mixin :nl
+      end
+
+      state :nl do
+        rule(/\n/, Str)
+      end
+
       state :root do
         rule(/##.*$/, Str::Doc)
         rule(/#.*$/,  Comment)
+        rule(/\*|=|>|<|\+|-|\/|@|\$|~|&|%|\!|\?|\||\\|\[|\]/, Operator)
+        rule(/\.\.|\.|,|\[\.|\.\]|{\.|\.}|\(\.|\.\)|{|}|\(|\)|:|\^|`|;/,
+             Punctuation)
+
+        rule(/(?:[\w]+)"/,Str, :rdqs)
+        rule(/"""/,       Str, :tdqs)
+        rule(/"/,         Str, :dqs)
+
       end
 
     end
