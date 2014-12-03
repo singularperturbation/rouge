@@ -10,7 +10,7 @@ module Rouge
       aliases 'nimrod'
       filenames '*.nim'
 
-      @@keywords = %w(
+      KEYWORDS = %w(
         addr as asm atomic bind block break case cast const continue
         converter discard distinct  do elif else end enum except export finally
         for from generic if import include interface iterator let macro method 
@@ -18,18 +18,22 @@ module Rouge
         tuple type using var when while with without yield
       )
 
-      @@opWords = %w(
+      OPWORDS = %w(
         and or not xor shl shr div mod in notin is isnot
       )
 
-      @@pseudoKeywords = %w(
+      PSEUDOKEYWORDS = %w(
         nil true false
       )
 
-      @@types = %w(
+      TYPES = %w(
        int int8 int16 int32 int64 float float32 float64 bool char range array
        seq set string
       ) 
+
+      NAMESPACE = %w(
+        from import include
+      )
 
       def self.underscorize(words)
         newWords = []
@@ -85,6 +89,17 @@ module Rouge
         rule(/\n/, Str)
       end
 
+      state :floatnumber do
+        rule(/\.(?!\.)[0-9_]*/,       Num::Float)
+        rule(/[eE][+-]?[0-9][0-9_]*/, Num::Float)
+        rule(//,                      Text, :pop!)
+      end
+
+      state :floatsuffix do
+        rule(/'[fF](32|64)/,          Num::Float)
+        rule(//,                      Text, :pop!)
+      end
+
       state :root do
         rule(/##.*$/, Str::Doc)
         rule(/#.*$/,  Comment)
@@ -101,9 +116,23 @@ module Rouge
         rule(/'/, Str::Char, :chars)
 
         # Keywords
-        rule(%r[(#{Nim.underscorize(@@opWords)})\b], Operator::Word)
+        rule(%r[(#{Nim.underscorize(OPWORDS)})\b], Operator::Word)
         rule(/(p_?r_?o_?c_?\s)(?![\(\[\]])/, Keyword, :funcname)
-
+        rule(%r[(#{Nim.underscorize(KEYWORDS)})\b],  Keyword)
+        rule(%r[(#{Nim.underscorize(NAMESPACE)})\b], Keyword::Namespace)
+        rule(/(v_?a_?r)\b/, Keyword::Declaration)
+        rule(%r[(#{Nim.underscorize(TYPES)})\b],          Keyword::Type)
+        rule(%r[(#{Nim.underscorize(PSEUDOKEYWORDS)})\b], Keyword::Pseudo)
+        # Identifiers
+        rule(/\b((?![_\d])\w)(((?!_)\w)|(_(?!_)\w))*/, Name)
+        # Numbers
+        # Note: Have to do this with a block to push multiple states first,
+        #       since we can't pass array of states like w/ Pygments.
+        rule(/[0-9][0-9_]*(?=([eE.]|\'[fF](32|64)))/) do |number|
+         push :floatsuffix
+         push :floatnumber 
+         token Num::Float
+        end
       end
 
     end
