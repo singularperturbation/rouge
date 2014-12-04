@@ -12,10 +12,10 @@ module Rouge
 
       KEYWORDS = %w(
         addr as asm atomic bind block break case cast const continue
-        converter discard distinct  do elif else end enum except export finally
-        for from generic if import include interface iterator let macro method 
-        mixin nil object of out proc ptr raise ref return static template try
-        tuple type using var when while with without yield
+        converter defer discard distinct do elif else end enum except export
+        finally for from generic if import include interface iterator let macro
+        method mixin nil object of out proc ptr raise ref return static template
+        try tuple type using var when while with without yield
       )
 
       OPWORDS = %w(
@@ -100,6 +100,12 @@ module Rouge
         rule(//,                      Text, :pop!)
       end
 
+      state :intsuffix do
+        rule(/'[iI](32|64)/,          Num::Integer::Long)
+        rule(/'[iI](8|16)/,           Num::Integer)
+        rule(//,                      Text, :pop!)
+      end
+
       state :root do
         rule(/##.*$/, Str::Doc)
         rule(/#.*$/,  Comment)
@@ -125,6 +131,7 @@ module Rouge
         rule(%r[(#{Nim.underscorize(PSEUDOKEYWORDS)})\b], Keyword::Pseudo)
         # Identifiers
         rule(/\b((?![_\d])\w)(((?!_)\w)|(_(?!_)\w))*/, Name)
+
         # Numbers
         # Note: Have to do this with a block to push multiple states first,
         #       since we can't pass array of states like w/ Pygments.
@@ -133,6 +140,14 @@ module Rouge
          push :floatnumber 
          token Num::Float
         end
+        rule(/0[xX][a-fA-F0-9][a-fA-F0-9_]*/, Num::Hex,     :intsuffix)
+        rule(/0[bB][01][01_]*/,               Num,          :intsuffix)
+        rule(/0o[0-7][0-7_]*/,                Num::Oct,     :intsuffix)
+        rule(/[0-9][0-9_]*/,                  Num::Integer, :intsuffix)
+
+        # Whitespace
+        rule(/\s+/, Text)
+        rule(/.+$/, Error)
       end
 
     end
