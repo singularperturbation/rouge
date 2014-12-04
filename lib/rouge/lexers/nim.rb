@@ -64,7 +64,7 @@ module Rouge
       state :dqs do
         rule(/\\([\\abcefnrtvl"\']|\n|x[a-fA-F0-9]{2}|[0-9]{1,3})/,
              Str::Escape)
-        rule(/""/, Str, :pop!)
+        rule(/"/, Str, :pop!)
         mixin :strings
       end
 
@@ -103,6 +103,7 @@ module Rouge
       state :intsuffix do
         rule(/'[iI](32|64)/,          Num::Integer::Long)
         rule(/'[iI](8|16)/,           Num::Integer)
+        rule(/'[uU]/,                 Num::Integer)
         rule(//,                      Text, :pop!)
       end
 
@@ -135,7 +136,7 @@ module Rouge
         # Numbers
         # Note: Have to do this with a block to push multiple states first,
         #       since we can't pass array of states like w/ Pygments.
-        rule(/[0-9][0-9_]*(?=([eE.]|\'[fF](32|64)))/) do |number|
+        rule(/[0-9][0-9_]*(?=([eE.]|'[fF](32|64)))/) do |number|
          push :floatsuffix
          push :floatnumber 
          token Num::Float
