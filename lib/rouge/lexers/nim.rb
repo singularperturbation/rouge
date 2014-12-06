@@ -95,15 +95,17 @@ module Rouge
         rule(//,                      Text, :pop!)
       end
 
+      # Making apostrophes optional, as only hexadecimal with type suffix
+      # possibly ambiguous.
       state :floatsuffix do
-        rule(/'[fF](32|64)/,          Num::Float)
+        rule(/'?[fF](32|64)/,          Num::Float)
         rule(//,                      Text, :pop!)
       end
 
       state :intsuffix do
-        rule(/'[iI](32|64)/,          Num::Integer::Long)
-        rule(/'[iI](8|16)/,           Num::Integer)
-        rule(/'[uU]/,                 Num::Integer)
+        rule(/'?[iI](32|64)/,          Num::Integer::Long)
+        rule(/'?[iI](8|16)/,           Num::Integer)
+        rule(/'?[uU]/,                 Num::Integer)
         rule(//,                      Text, :pop!)
       end
 
@@ -136,7 +138,7 @@ module Rouge
         # Numbers
         # Note: Have to do this with a block to push multiple states first,
         #       since we can't pass array of states like w/ Pygments.
-        rule(/[0-9][0-9_]*(?=([eE.]|'[fF](32|64)))/) do |number|
+        rule(/[0-9][0-9_]*(?=([eE.]|'?[fF](32|64)))/) do |number|
          push :floatsuffix
          push :floatnumber 
          token Num::Float
